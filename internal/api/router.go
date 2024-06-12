@@ -3,10 +3,12 @@ package api
 import (
 	"go-stock-price-service/internal/service"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(r *mux.Router) {
+func SetupRoutes() *gin.Engine {
+	router := gin.Default()
 	stockService := service.NewStockService()
-	r.HandleFunc("/prices/{stockId}", stockService.GetStockPrice).Methods("GET")
+	router.GET("/prices/:stockId", stockService.GetStockPrice)
+	return router
 }
