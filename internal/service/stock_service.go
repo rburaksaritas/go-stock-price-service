@@ -16,12 +16,12 @@ type StockService struct {
 }
 
 type PriceData struct {
-	CurrentPrice  float64 `json:"c"`
-	OpenPrice     float64 `json:"o"`
-	HighPrice     float64 `json:"h"`
-	LowPrice      float64 `json:"l"`
-	PreviousClose float64 `json:"pc"`
-	Timestamp     int64   `json:"t"`
+	CurrentPrice  float64 `json:"current_price"`
+	OpenPrice     float64 `json:"open_price"`
+	HighPrice     float64 `json:"high_price"`
+	LowPrice      float64 `json:"low_price"`
+	PreviousClose float64 `json:"previous_close"`
+	Timestamp     int64   `json:"timestamp"`
 }
 
 func NewStockService() *StockService {
@@ -56,10 +56,26 @@ func (s *StockService) fetchPrice(stockId string) (*PriceData, error) {
 		return nil, fmt.Errorf("error reading response body: %v", err)
 	}
 
-	var data PriceData
-	if err := json.Unmarshal(body, &data); err != nil {
+	var rawData struct {
+		CurrentPrice  float64 `json:"c"`
+		OpenPrice     float64 `json:"o"`
+		HighPrice     float64 `json:"h"`
+		LowPrice      float64 `json:"l"`
+		PreviousClose float64 `json:"pc"`
+		Timestamp     int64   `json:"t"`
+	}
+	if err := json.Unmarshal(body, &rawData); err != nil {
 		return nil, fmt.Errorf("error parsing JSON response: %v", err)
 	}
 
-	return &data, nil
+	data := &PriceData{
+		CurrentPrice:  rawData.CurrentPrice,
+		OpenPrice:     rawData.OpenPrice,
+		HighPrice:     rawData.HighPrice,
+		LowPrice:      rawData.LowPrice,
+		PreviousClose: rawData.PreviousClose,
+		Timestamp:     rawData.Timestamp,
+	}
+
+	return data, nil
 }
