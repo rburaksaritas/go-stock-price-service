@@ -3,9 +3,7 @@ package main
 import (
 	"go-stock-price-service/internal/api"
 	"log"
-	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
@@ -15,9 +13,8 @@ func main() {
 		log.Fatalf("Error loading .env file")
 	}
 
-	router := mux.NewRouter()
-	api.SetupRoutes(router)
+	router := api.SetupRoutes()
 
 	log.Println("Server started at :8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(router.Run(":8080"))
 }
