@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
 type StockService struct {
@@ -32,15 +32,20 @@ func NewStockService() *StockService {
 	return &StockService{ApiKey: apiKey}
 }
 
-func (s *StockService) GetStockPrice(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	stockId := vars["stockId"]
+func (s *StockService) GetStockPrice(c *gin.Context) {
+	stockId := c.Param("stockId")
 	priceData, err := s.fetchPrice(stockId)
 	if err != nil {
-		http.Error(w, "Failed to fetch stock price", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	json.NewEncoder(w).Encode(priceData)
+
+	if priceData.CurrentPrice == 0 && priceData.OpenPrice == 0 && priceData.HighPrice == 0 && priceData.LowPrice == 0 && priceData.PreviousClose == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Invalid stock ID or no data available"})
+		return
+	}
+
+	c.JSON(http.StatusOK, priceData)
 }
 
 func (s *StockService) fetchPrice(stockId string) (*PriceData, error) {
@@ -50,6 +55,10 @@ func (s *StockService) fetchPrice(stockId string) (*PriceData, error) {
 		return nil, fmt.Errorf("error making request to Finnhub: %v", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("error response from Finnhub: %s", resp.Status)
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
