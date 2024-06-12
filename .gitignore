@@ -23,3 +23,6 @@ go.work.sum
 
 # Environment variables
 *.env
+
+# Ignore the stock-price-service executable
+stock-price-service
