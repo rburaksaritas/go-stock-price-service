@@ -1,14 +1,15 @@
 package api
 
 import (
+	"go-stock-price-service/internal/api/handlers"
 	"go-stock-price-service/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes() *gin.Engine {
+func SetupRoutes(stockService *service.StockService) *gin.Engine {
 	router := gin.Default()
-	stockService := service.NewStockService()
-	router.GET("/prices/:stockId", stockService.GetStockPrice)
+	stockHandler := handlers.NewStockHandler(stockService)
+	router.GET("/prices/:stockId", stockHandler.GetStockPrice)
 	return router
 }
