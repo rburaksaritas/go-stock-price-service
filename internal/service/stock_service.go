@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +22,7 @@ type PriceData struct {
 	HighPrice     float64 `json:"high_price"`
 	LowPrice      float64 `json:"low_price"`
 	PreviousClose float64 `json:"previous_close"`
-	Timestamp     int64   `json:"timestamp"`
+	Timestamp     string  `json:"timestamp"`
 }
 
 func NewStockService() *StockService {
@@ -34,7 +35,9 @@ func NewStockService() *StockService {
 
 func (s *StockService) GetStockPrice(c *gin.Context) {
 	stockId := c.Param("stockId")
-	priceData, err := s.fetchPrice(stockId)
+	timeZone := c.DefaultQuery("timezone", "UTC")
+
+	priceData, err := s.fetchPrice(stockId, timeZone)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -48,7 +51,15 @@ func (s *StockService) GetStockPrice(c *gin.Context) {
 	c.JSON(http.StatusOK, priceData)
 }
 
-func (s *StockService) fetchPrice(stockId string) (*PriceData, error) {
+var timeZones = map[string]string{
+	"tr": "Europe/Istanbul",
+	"us": "America/New_York",
+	"uk": "Europe/London",
+	"jp": "Asia/Tokyo",
+	"in": "Asia/Kolkata",
+}
+
+func (s *StockService) fetchPrice(stockId string, timeZone string) (*PriceData, error) {
 	url := fmt.Sprintf("https://finnhub.io/api/v1/quote?symbol=%s&token=%s", stockId, s.ApiKey)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -77,13 +88,25 @@ func (s *StockService) fetchPrice(stockId string) (*PriceData, error) {
 		return nil, fmt.Errorf("error parsing JSON response: %v", err)
 	}
 
+	var loc *time.Location
+	if tz, ok := timeZones[timeZone]; ok {
+		loc, err = time.LoadLocation(tz)
+	} else {
+		loc, err = time.LoadLocation(timeZone)
+	}
+	if err != nil || loc == nil {
+		loc = time.UTC
+	}
+
+	readableTimestamp := time.Unix(rawData.Timestamp, 0).In(loc).Format(time.RFC3339)
+
 	data := &PriceData{
 		CurrentPrice:  rawData.CurrentPrice,
 		OpenPrice:     rawData.OpenPrice,
 		HighPrice:     rawData.HighPrice,
 		LowPrice:      rawData.LowPrice,
 		PreviousClose: rawData.PreviousClose,
-		Timestamp:     rawData.Timestamp,
+		Timestamp:     readableTimestamp,
 	}
 
 	return data, nil
