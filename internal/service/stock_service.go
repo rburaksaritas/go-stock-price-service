@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"go-stock-price-service/internal/errors"
 	"go-stock-price-service/internal/models"
 	"go-stock-price-service/pkg/utils"
 	"io"
@@ -24,30 +25,34 @@ func NewStockService() *StockService {
 }
 
 func (s *StockService) FetchPrice(stockId string, timeZone string) (*models.PriceData, error) {
+	if stockId == "" {
+		return nil, &errors.InvalidInputError{Param: "stockId", Value: stockId}
+	}
+
 	url := fmt.Sprintf("https://finnhub.io/api/v1/quote?symbol=%s&token=%s", stockId, s.ApiKey)
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("error making request to Finnhub: %v", err)
+		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error making request to Finnhub: %v", err)}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("error response from Finnhub: %s", resp.Status)
+		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error response from Finnhub: %s", resp.Status)}
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error reading response body: %v", err)
+		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error reading response body: %v", err)}
 	}
 
 	var rawData models.RawDataFinnhub
 	if err := json.Unmarshal(body, &rawData); err != nil {
-		return nil, fmt.Errorf("error parsing JSON response: %v", err)
+		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error parsing JSON response: %v", err)}
 	}
 
 	readableTimestamp, err := utils.ReadableTimestamp(rawData.Timestamp, timeZone)
 	if err != nil {
-		return nil, fmt.Errorf("error converting timestamp: %v", err)
+		return nil, &errors.InvalidInputError{Param: "timezone", Value: timeZone}
 	}
 
 	data := &models.PriceData{
@@ -57,6 +62,10 @@ func (s *StockService) FetchPrice(stockId string, timeZone string) (*models.Pric
 		LowPrice:      rawData.LowPrice,
 		PreviousClose: rawData.PreviousClose,
 		Timestamp:     *readableTimestamp,
+	}
+
+	if data.CurrentPrice == 0 && data.OpenPrice == 0 && data.HighPrice == 0 && data.LowPrice == 0 && data.PreviousClose == 0 {
+		return nil, &errors.NotFoundError{StockID: stockId}
 	}
 
 	return data, nil
