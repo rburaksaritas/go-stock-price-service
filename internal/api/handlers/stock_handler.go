@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"go-stock-price-service/internal/errors"
 	"go-stock-price-service/internal/service"
 	"net/http"
 
@@ -21,12 +22,16 @@ func (h *StockHandler) GetStockPrice(c *gin.Context) {
 
 	priceData, err := h.StockService.FetchPrice(stockId, timeZone)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	if priceData.CurrentPrice == 0 && priceData.OpenPrice == 0 && priceData.HighPrice == 0 && priceData.LowPrice == 0 && priceData.PreviousClose == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Invalid stock ID or no data available"})
+		switch e := err.(type) {
+		case *errors.InvalidInputError:
+			c.JSON(http.StatusBadRequest, gin.H{"error": e.Error()})
+		case *errors.NotFoundError:
+			c.JSON(http.StatusNotFound, gin.H{"error": e.Error()})
+		case *errors.ExternalAPIError:
+			c.JSON(http.StatusBadGateway, gin.H{"error": e.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error has occured."})
+		}
 		return
 	}
 
