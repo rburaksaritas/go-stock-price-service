@@ -1,72 +1,40 @@
 package service
 
 import (
-	"encoding/json"
-	"fmt"
 	"go-stock-price-service/internal/errors"
 	"go-stock-price-service/internal/models"
-	"go-stock-price-service/pkg/utils"
-	"io"
-	"log"
-	"net/http"
-	"os"
+	"go-stock-price-service/internal/providers"
 )
 
 type StockService struct {
-	ApiKey string
+	finnhubProvider      *providers.FinnhubProvider
+	alphaVantageProvider *providers.AlphaVantageProvider
 }
 
-func NewStockService() *StockService {
-	apiKey := os.Getenv("FINNHUB_API_KEY")
-	if apiKey == "" {
-		log.Fatal("FINNHUB_API_KEY not set in .env file")
+func NewStockService(finnhubProvider *providers.FinnhubProvider, alphaVantageProvider *providers.AlphaVantageProvider) *StockService {
+	return &StockService{
+		finnhubProvider:      finnhubProvider,
+		alphaVantageProvider: alphaVantageProvider,
 	}
-	return &StockService{ApiKey: apiKey}
 }
 
 func (s *StockService) FetchPrice(stockId string, timeZone string) (*models.PriceData, error) {
-	if stockId == "" {
-		return nil, &errors.InvalidInputError{Param: "stockId", Value: stockId}
-	}
-
-	url := fmt.Sprintf("https://finnhub.io/api/v1/quote?symbol=%s&token=%s", stockId, s.ApiKey)
-	resp, err := http.Get(url)
+	data, err := s.finnhubProvider.FetchPrice(stockId, timeZone)
 	if err != nil {
-		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error making request to Finnhub: %v", err)}
+		if apiErr, ok := err.(*errors.ExternalAPIError); ok && apiErr.Message == "Too Many Requests" {
+			// Finnhub rate-limited, switch to Alpha Vantage
+			data, err = s.alphaVantageProvider.FetchPrice(stockId, timeZone)
+			if err != nil {
+				if avErr, ok := err.(*errors.ExternalAPIError); ok && avErr.Message == "Too Many Requests" {
+					// Alpha Vantage rate-limited, indicate fallback to cached data
+					return nil, &errors.ExternalAPIError{Message: "Both providers rate-limited, attempting to provide cached data."}
+				}
+				return nil, err
+			}
+		} else {
+			// Return other errors as is
+			return nil, err
+		}
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error response from Finnhub: %s", resp.Status)}
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error reading response body: %v", err)}
-	}
-
-	var rawData models.RawDataFinnhub
-	if err := json.Unmarshal(body, &rawData); err != nil {
-		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error parsing JSON response: %v", err)}
-	}
-
-	readableTimestamp, err := utils.ReadableTimestamp(rawData.Timestamp, timeZone)
-	if err != nil {
-		return nil, &errors.InvalidInputError{Param: "timezone", Value: timeZone}
-	}
-
-	data := &models.PriceData{
-		CurrentPrice:  rawData.CurrentPrice,
-		OpenPrice:     rawData.OpenPrice,
-		HighPrice:     rawData.HighPrice,
-		LowPrice:      rawData.LowPrice,
-		PreviousClose: rawData.PreviousClose,
-		Timestamp:     *readableTimestamp,
-	}
-
-	if data.CurrentPrice == 0 && data.OpenPrice == 0 && data.HighPrice == 0 && data.LowPrice == 0 && data.PreviousClose == 0 {
-		return nil, &errors.NotFoundError{StockID: stockId}
-	}
-
 	return data, nil
 }
