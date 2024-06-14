@@ -33,6 +33,10 @@ func (p *PolygonProvider) FetchPrice(stockId string, timeZone string) (*models.P
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == 429 {
+		return nil, &errors.ExternalAPIError{Message: "Too Many Requests"}
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error response from Polygon: %s", resp.Status)}
 	}
@@ -41,9 +45,6 @@ func (p *PolygonProvider) FetchPrice(stockId string, timeZone string) (*models.P
 	if err != nil {
 		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error reading response body: %v", err)}
 	}
-
-	// Log the response body for debugging
-	log.Printf("Polygon response body: %s", string(body))
 
 	var response struct {
 		Results []struct {
