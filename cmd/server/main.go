@@ -17,7 +17,9 @@ func main() {
 
 	finnhubProvider := providers.NewFinnhubProvider()
 	alphaVantageProvider := providers.NewAlphaVantageProvider()
-	stockService := service.NewStockService(finnhubProvider, alphaVantageProvider)
+	polygonProvider := providers.NewPolygonProvider()
+	stockService := service.NewStockService(finnhubProvider, alphaVantageProvider, polygonProvider)
+
 	router := api.SetupRoutes(stockService)
 
 	log.Println("Server started at :8080")
