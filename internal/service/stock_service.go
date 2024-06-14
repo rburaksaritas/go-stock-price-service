@@ -27,6 +27,16 @@ func NewStockService(finnhubProvider *providers.FinnhubProvider, alphaVantagePro
 func (s *StockService) FetchPrice(stockId string, timeZone string) (*models.PriceData, error) {
 	cacheKey := stockId + "_" + timeZone
 
+	// Check the TTL of the cache key
+	ttl, err := s.cache.TTL(cacheKey)
+	if err == nil && ttl.Seconds() > 50 {
+		var cachedData models.PriceData
+		if cacheErr := s.cache.Get(cacheKey, &cachedData); cacheErr == nil {
+			cachedData.Provider += " (cached)"
+			return &cachedData, nil
+		}
+	}
+
 	data, err := s.finnhubProvider.FetchPrice(stockId, timeZone)
 	if err != nil {
 		if apiErr, ok := err.(*errors.ExternalAPIError); ok && apiErr.Message == "Too Many Requests" {
