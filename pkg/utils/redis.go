@@ -38,3 +38,11 @@ func (r *RedisClient) Get(key string, dest interface{}) error {
 	}
 	return json.Unmarshal([]byte(result), dest)
 }
+
+func (r *RedisClient) TTL(key string) (time.Duration, error) {
+	ttl, err := r.client.TTL(r.ctx, key).Result()
+	if err != nil {
+		return 0, err
+	}
+	return ttl, nil
+}
