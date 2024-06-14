@@ -19,13 +19,18 @@ This is a Go-based stock price service that fetches real-time stock prices from 
 ## Installation
 
 1. Clone the repository:
-git clone https://github.com/yourusername/go-stock-price-service.git
+```
+git clone https://github.com/rburaksaritas/go-stock-price-service.git
+```
+2. Navigate to repository:
+```
 cd go-stock-price-service
-Copy code
-2. Install dependencies:
+```
+3. Install dependencies:
+```
 go mod tidy
-Copy code
-3. Set up environment variables:
+```
+5. Set up environment variables:
 Create a `.env` file in the project root and add the following:
 ```
 FINNHUB_API_KEY=your_finnhub_api_key
