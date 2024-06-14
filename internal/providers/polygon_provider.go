@@ -46,16 +46,12 @@ func (p *PolygonProvider) FetchPrice(stockId string, timeZone string) (*models.P
 		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error reading response body: %v", err)}
 	}
 
-	var response struct {
-		Results []struct {
-			Close     float64         `json:"c"`
-			High      float64         `json:"h"`
-			Low       float64         `json:"l"`
-			Open      float64         `json:"o"`
-			Volume    json.Number     `json:"v"`
-			Timestamp json.RawMessage `json:"t"` // Use json.RawMessage to handle different types
-		} `json:"results"`
+	var responseMap map[string]interface{}
+	if err := json.Unmarshal(body, &responseMap); err != nil {
+		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error parsing JSON response: %v", err)}
 	}
+
+	var response models.RawDataPolygon
 	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error parsing JSON response: %v", err)}
 	}
@@ -66,17 +62,11 @@ func (p *PolygonProvider) FetchPrice(stockId string, timeZone string) (*models.P
 
 	latestData := response.Results[0]
 
-	var timestamp int64
-	if err := json.Unmarshal(latestData.Timestamp, &timestamp); err != nil {
-		var timestampStr string
-		if err := json.Unmarshal(latestData.Timestamp, &timestampStr); err != nil {
-			return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error converting timestamp: %v", err)}
-		}
-		timestamp, err = strconv.ParseInt(timestampStr, 10, 64)
-		if err != nil {
-			return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error converting timestamp: %v", err)}
-		}
+	timestamp, err := strconv.ParseInt(string(latestData.Timestamp), 10, 64)
+	if err != nil {
+		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error converting timestamp: %v", err)}
 	}
+	timestamp = timestamp / 1000
 
 	readableTimestamp, err := utils.Int64ToReadableTimestamp(timestamp, timeZone)
 	if err != nil {
