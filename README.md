@@ -1,4 +1,4 @@
-# Go Stock Price Service
+# Stock Price Service with Go
 
 This is a Go-based stock price service that fetches real-time stock prices from multiple providers and caches the results for improved performance.
 
