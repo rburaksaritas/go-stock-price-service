@@ -24,12 +24,22 @@ func LoadLocation(timeZone string) (*time.Location, error) {
 	return loc, nil
 }
 
-func ReadableTimestamp(timestamp int64, timezone string) (*string, error) {
+func Int64ToReadableTimestamp(timestamp int64, timezone string) (*string, error) {
 	loc, err := LoadLocation(timezone)
 	if err != nil {
 		return nil, err
 	}
 
 	readableTimestamp := time.Unix(timestamp, 0).In(loc).Format(time.RFC3339)
+	return &readableTimestamp, nil
+}
+
+func TimeToReadableTimestamp(timeObj time.Time, timezone string) (*string, error) {
+	loc, err := LoadLocation(timezone)
+	if err != nil {
+		return nil, err
+	}
+
+	readableTimestamp := timeObj.In(loc).Format(time.RFC3339)
 	return &readableTimestamp, nil
 }
