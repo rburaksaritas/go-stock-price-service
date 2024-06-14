@@ -1,5 +1,7 @@
 package models
 
+import "encoding/json"
+
 type PriceData struct {
 	CurrentPrice  float64 `json:"current_price"`
 	OpenPrice     float64 `json:"open_price"`
@@ -31,12 +33,23 @@ type RawDataAlphaVantage struct {
 }
 
 type RawDataPolygon struct {
-	Results []struct {
-		Close     float64 `json:"c"`
-		High      float64 `json:"h"`
-		Low       float64 `json:"l"`
-		Open      float64 `json:"o"`
-		Volume    int64   `json:"v"`
-		Timestamp int64   `json:"t"`
-	} `json:"results"`
+	Ticker       string          `json:"ticker"`
+	QueryCount   int             `json:"queryCount"`
+	ResultsCount int             `json:"resultsCount"`
+	Adjusted     bool            `json:"adjusted"`
+	Results      []PolygonResult `json:"results"`
+	Status       string          `json:"status"`
+	RequestID    string          `json:"request_id"`
+	Count        int             `json:"count"`
+}
+
+type PolygonResult struct {
+	Ticker    string      `json:"T"`
+	Close     float64     `json:"c"`
+	High      float64     `json:"h"`
+	Low       float64     `json:"l"`
+	Open      float64     `json:"o"`
+	Volume    json.Number `json:"v"`
+	Timestamp json.Number `json:"t"`
+	NumTrades int         `json:"n"`
 }
