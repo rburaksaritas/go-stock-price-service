@@ -27,10 +27,11 @@ go mod tidy
 Copy code
 3. Set up environment variables:
 Create a `.env` file in the project root and add the following:
+```
 FINNHUB_API_KEY=your_finnhub_api_key
 ALPHAVANTAGE_API_KEY=your_alphavantage_api_key
 POLYGON_API_KEY=your_polygon_api_key
-
+```
 ## Usage
 
 1. Start the Redis server.
