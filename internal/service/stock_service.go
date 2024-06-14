@@ -32,7 +32,7 @@ func (s *StockService) FetchPrice(stockId string, timeZone string) (*models.Pric
 					data, err = s.alphaVantageProvider.FetchPrice(stockId, timeZone)
 					if err != nil {
 						if avErr, ok := err.(*errors.ExternalAPIError); ok && avErr.Message == "Too Many Requests" {
-							// Both providers rate-limited, indicate fallback to cached data
+							// All providers rate-limited, indicate fallback to cached data
 							return nil, &errors.ExternalAPIError{Message: "All providers rate-limited, attempting to provide cached data."}
 						}
 						return nil, err
