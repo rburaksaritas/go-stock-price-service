@@ -59,7 +59,7 @@ func (p *AlphaVantageProvider) FetchPrice(stockId string, timeZone string) (*mod
 		return nil, &errors.ExternalAPIError{Message: "Too Many Requests"}
 	}
 
-	var rawData models.AlphaVantagePriceData
+	var rawData models.RawDataAlphaVantage
 	if err := json.Unmarshal(body, &rawData); err != nil {
 		return nil, &errors.ExternalAPIError{Message: fmt.Sprintf("Error parsing JSON response: %v", err)}
 	}
