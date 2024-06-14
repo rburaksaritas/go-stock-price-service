@@ -2,6 +2,7 @@ package main
 
 import (
 	"go-stock-price-service/internal/api"
+	"go-stock-price-service/internal/providers"
 	"go-stock-price-service/internal/service"
 	"log"
 
@@ -14,7 +15,9 @@ func main() {
 		log.Fatalf("Error loading .env file")
 	}
 
-	stockService := service.NewStockService()
+	finnhubProvider := providers.NewFinnhubProvider()
+	alphaVantageProvider := providers.NewAlphaVantageProvider()
+	stockService := service.NewStockService(finnhubProvider, alphaVantageProvider)
 	router := api.SetupRoutes(stockService)
 
 	log.Println("Server started at :8080")
