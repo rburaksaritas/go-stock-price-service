@@ -19,7 +19,7 @@ type RawDataFinnhub struct {
 	Timestamp     int64   `json:"t"`
 }
 
-type AlphaVantagePriceData struct {
+type RawDataAlphaVantage struct {
 	GlobalQuote struct {
 		Symbol        string  `json:"01. symbol"`
 		Open          float64 `json:"02. open,string"`
@@ -28,4 +28,15 @@ type AlphaVantagePriceData struct {
 		Price         float64 `json:"05. price,string"`
 		PreviousClose float64 `json:"08. previous close,string"`
 	} `json:"Global Quote"`
+}
+
+type RawDataPolygon struct {
+	Results []struct {
+		Close     float64 `json:"c"`
+		High      float64 `json:"h"`
+		Low       float64 `json:"l"`
+		Open      float64 `json:"o"`
+		Volume    int64   `json:"v"`
+		Timestamp int64   `json:"t"`
+	} `json:"results"`
 }
