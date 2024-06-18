@@ -21,7 +21,9 @@ func main() {
 	finnhubProvider := providers.NewFinnhubProvider()
 	alphaVantageProvider := providers.NewAlphaVantageProvider()
 	polygonProvider := providers.NewPolygonProvider()
-	stockService := service.NewStockService(finnhubProvider, alphaVantageProvider, polygonProvider, cache)
+	providers := []providers.Provider{finnhubProvider, alphaVantageProvider, polygonProvider}
+
+	stockService := service.NewStockService(providers, cache)
 
 	router := api.SetupRoutes(stockService)
 
